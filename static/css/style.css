@@ -1,0 +1,883 @@
+/* =========================================================
+   AIRLINE CUSTOMER SENTIMENT ANALYZER - STYLESHEET
+   Themes: Light (Default) and Dark with CSS Custom Properties
+   ========================================================= */
+
+/* --- CSS Variables & Theme Palettes --- */
+:root {
+    /* Light Theme (Default) */
+    --bg: #F7F8FC;
+    --sidebar-bg: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --border: #E3E7EF;
+    --border-subtle: #EDF0F5;
+    --text: #172033;
+    --secondary-text: #5F6B7A;
+    --muted-text: #778196;
+    --accent: #6D3DF5;
+    --accent-hover: #5B2FE0;
+    --accent-subtle: rgba(109, 61, 245, 0.08);
+    --positive: #159A63;
+    --positive-bg: rgba(21, 154, 99, 0.12);
+    --negative: #DC4545;
+    --negative-bg: rgba(220, 69, 69, 0.12);
+    --neutral: #778196;
+    --neutral-bg: rgba(119, 129, 150, 0.12);
+    --banner-bg: #F0EEFC;
+    --banner-border: #D8D0F8;
+    --banner-text: #43288C;
+    --grid-line: #E3E7EF;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-full: 9999px;
+    --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+    /* Dark Theme */
+    --bg: #0F1117;
+    --sidebar-bg: #171A23;
+    --card-bg: #191D28;
+    --border: #2B3040;
+    --border-subtle: #232734;
+    --text: #F4F5FA;
+    --secondary-text: #B7BDCB;
+    --muted-text: #929AAC;
+    --accent: #9270FF;
+    --accent-hover: #A48AFF;
+    --accent-subtle: rgba(146, 112, 255, 0.14);
+    --positive: #35C98A;
+    --positive-bg: rgba(53, 201, 138, 0.15);
+    --negative: #FF6666;
+    --negative-bg: rgba(255, 102, 102, 0.15);
+    --neutral: #A0A7B5;
+    --neutral-bg: rgba(160, 167, 181, 0.15);
+    --banner-bg: #1F1A3A;
+    --banner-border: #3E326B;
+    --banner-text: #D4C8FC;
+    --grid-line: #2B3040;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* Reduced Motion Preference */
+@media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* --- Base & Reset --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.22s ease, color 0.22s ease;
+    min-height: 100vh;
+}
+
+/* --- Layout Structure --- */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 290px;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 22px;
+    flex-shrink: 0;
+    transition: var(--transition);
+    overflow-y: auto;
+    max-height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-icon {
+    font-size: 1.5rem;
+}
+
+.brand-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+}
+
+.source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--accent-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.source-dot {
+    width: 7px;
+    height: 7px;
+    background-color: var(--accent);
+    border-radius: 50%;
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted-text);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+/* File Upload Zone */
+.upload-dropzone {
+    border: 1.5px dashed var(--border);
+    background-color: var(--card-bg);
+    border-radius: var(--radius-md);
+    padding: 16px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.upload-dropzone:hover, .upload-dropzone.dragover {
+    border-color: var(--accent);
+    background-color: var(--accent-subtle);
+}
+
+.upload-icon {
+    font-size: 1.4rem;
+}
+
+.upload-text {
+    font-size: 0.82rem;
+    color: var(--secondary-text);
+    font-weight: 500;
+}
+
+.upload-hint {
+    font-size: 0.72rem;
+    color: var(--muted-text);
+}
+
+/* Filter Controls */
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    max-height: 130px;
+    overflow-y: auto;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-item input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+.sentiment-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-pos { background-color: var(--positive); }
+.dot-neg { background-color: var(--negative); }
+.dot-neu { background-color: var(--neutral); }
+
+.date-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-field {
+    flex: 1;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.date-field:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background-color: var(--card-bg);
+    border-color: var(--border);
+    color: var(--text);
+}
+
+.btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn-primary {
+    background-color: var(--accent);
+    color: #FFFFFF;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* --- Main Dashboard Area --- */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 36px;
+    gap: 22px;
+    overflow-y: auto;
+    transition: var(--transition);
+}
+
+/* Header */
+.app-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.header-title-group h1 {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-title-group p {
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+    margin-top: 3px;
+}
+
+/* Genuine Animated Sun/Moon Toggle */
+.theme-switch-btn {
+    position: relative;
+    width: 68px;
+    height: 34px;
+    background-color: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+    transition: var(--transition);
+    outline: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-switch-btn:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.switch-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+    user-select: none;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    width: 26px;
+    height: 26px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .switch-thumb {
+    transform: translateX(32px);
+}
+
+/* Notice Banner */
+.notice-banner {
+    background-color: var(--banner-bg);
+    border: 1px solid var(--banner-border);
+    color: var(--banner-text);
+    border-radius: var(--radius-md);
+    padding: 12px 18px;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.45;
+}
+
+.notice-banner strong {
+    color: var(--banner-text);
+}
+
+/* --- KPI Metric Cards Grid --- */
+.kpi-grid {
+    display: grid;
+    grid-grid-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.kpi-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.kpi-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.kpi-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.kpi-value-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.kpi-number {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+}
+
+.kpi-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+}
+
+.badge-pos {
+    background-color: var(--positive-bg);
+    color: var(--positive);
+}
+
+.badge-neg {
+    background-color: var(--negative-bg);
+    color: var(--negative);
+}
+
+.badge-neu {
+    background-color: var(--neutral-bg);
+    color: var(--neutral);
+}
+
+.badge-total {
+    background-color: var(--accent-subtle);
+    color: var(--accent);
+}
+
+/* --- Collapsible Accordion (Manual Review Entry) --- */
+.accordion-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.accordion-header {
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text);
+}
+
+.accordion-header:hover {
+    background-color: var(--accent-subtle);
+}
+
+.accordion-icon {
+    transition: transform 0.22s ease;
+}
+
+.accordion-card.open .accordion-icon {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    display: none;
+    padding: 0 20px 20px 20px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.accordion-card.open .accordion-content {
+    display: block;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.form-full {
+    grid-column: span 2;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+}
+
+.form-control {
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 0.86rem;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 75px;
+}
+
+.form-alert {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 10px;
+    display: none;
+}
+
+.form-alert.success {
+    display: block;
+    background-color: var(--positive-bg);
+    color: var(--positive);
+    border: 1px solid var(--positive);
+}
+
+.form-alert.error {
+    display: block;
+    background-color: var(--negative-bg);
+    color: var(--negative);
+    border: 1px solid var(--negative);
+}
+
+/* --- Visual Analytics Grid --- */
+.charts-grid-row1 {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: 18px;
+}
+
+.chart-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: var(--transition);
+}
+
+.chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.chart-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.chart-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toggle-pill-btn {
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--secondary-text);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.toggle-pill-btn.active {
+    background-color: var(--accent);
+    color: #FFFFFF;
+    border-color: var(--accent);
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 270px;
+}
+
+.chart-container-large {
+    height: 290px;
+}
+
+/* --- Review Data Table Section --- */
+.table-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.table-toolbar {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.table-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.table-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.table-count-badge {
+    font-size: 0.78rem;
+    color: var(--muted-text);
+    font-weight: 500;
+}
+
+.table-search-input {
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    width: 220px;
+    outline: none;
+    transition: var(--transition);
+}
+
+.table-search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    max-height: 440px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    text-align: left;
+}
+
+.data-table th {
+    background-color: var(--bg);
+    color: var(--secondary-text);
+    font-weight: 700;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text);
+    vertical-align: top;
+}
+
+.data-table tr:hover td {
+    background-color: var(--accent-subtle);
+}
+
+.feedback-cell {
+    min-width: 320px;
+    line-height: 1.45;
+}
+
+.score-cell {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
+.empty-state {
+    padding: 36px 20px;
+    text-align: center;
+    color: var(--secondary-text);
+    font-size: 0.9rem;
+}
+
+/* --- Export Section --- */
+.export-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+}
+
+.export-info h4 {
+    font-size: 0.95rem;
+    color: var(--text);
+    font-weight: 700;
+}
+
+.export-info p {
+    font-size: 0.82rem;
+    color: var(--secondary-text);
+    margin-top: 2px;
+}
+
+.export-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* --- Methodology Accordion --- */
+.methodology-text {
+    font-size: 0.84rem;
+    color: var(--secondary-text);
+    line-height: 1.6;
+}
+
+.methodology-text ul {
+    margin: 8px 0 12px 20px;
+}
+
+.methodology-text code {
+    background-color: var(--bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--accent);
+}
+
+/* Mobile Toggle Hamburger */
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text);
+}
+
+/* --- Responsive Media Queries --- */
+@media (max-width: 1024px) {
+    .charts-grid-row1 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 860px) {
+    .sidebar {
+        position: fixed;
+        left: -310px;
+        z-index: 100;
+        box-shadow: 4px 0 16px rgba(0,0,0,0.25);
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .main-content {
+        padding: 20px 16px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-full {
+        grid-column: span 1;
+    }
+}

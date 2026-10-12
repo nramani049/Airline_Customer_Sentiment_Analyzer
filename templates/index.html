@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Customer Sentiment Analyzer</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <span class="brand-icon">✈️</span>
+                    <span class="brand-text">Sentiment AI</span>
+                </div>
+            </div>
+
+            <!-- Active Dataset Badge -->
+            <div class="source-badge" id="sourceBadge" title="Current Active Dataset">
+                <span class="source-dot"></span>
+                <span id="sourceNameText">Loading dataset...</span>
+            </div>
+
+            <!-- Quick Action: Reload Sample Dataset -->
+            <button class="btn btn-secondary btn-block" id="btnReloadSample" title="Reset dataset to the original 50 synthetic reviews">
+                🔄 Reload Sample Dataset
+            </button>
+
+            <!-- File Upload Section -->
+            <div class="sidebar-section">
+                <span class="section-title">Upload Reviews CSV</span>
+                <div class="upload-dropzone" id="uploadDropzone">
+                    <span class="upload-icon">📁</span>
+                    <span class="upload-text">Click or drag CSV here</span>
+                    <span class="upload-hint">Columns: airline, date, feedback</span>
+                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                </div>
+                <div id="uploadFeedback" style="font-size: 0.78rem; display: none;"></div>
+            </div>
+
+            <hr style="border-color: var(--border-subtle);">
+
+            <!-- Filter: Airlines -->
+            <div class="sidebar-section">
+                <span class="section-title">Filter by Airline</span>
+                <div class="checkbox-list" id="airlineCheckboxList">
+                    <!-- Dynamically populated from active dataset -->
+                </div>
+            </div>
+
+            <!-- Filter: Sentiment -->
+            <div class="sidebar-section">
+                <span class="section-title">Filter by Sentiment</span>
+                <div class="checkbox-list" id="sentimentCheckboxList">
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Positive" checked class="sentiment-checkbox">
+                        <span class="sentiment-dot dot-pos"></span>
+                        <span>Positive</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Negative" checked class="sentiment-checkbox">
+                        <span class="sentiment-dot dot-neg"></span>
+                        <span>Negative</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Neutral" checked class="sentiment-checkbox">
+                        <span class="sentiment-dot dot-neu"></span>
+                        <span>Neutral</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Filter: Date Range -->
+            <div class="sidebar-section">
+                <span class="section-title">Date Range</span>
+                <div class="date-inputs">
+                    <input type="date" class="date-field" id="startDateInput" title="Start Date">
+                    <span style="color: var(--muted-text); font-size: 0.8rem;">to</span>
+                    <input type="date" class="date-field" id="endDateInput" title="End Date">
+                </div>
+            </div>
+
+            <!-- Reset Filters Button -->
+            <button class="btn btn-secondary btn-block" id="btnResetFilters" style="margin-top: auto;">
+                🔄 Reset All Filters
+            </button>
+        </aside>
+
+        <!-- MAIN DASHBOARD CONTENT -->
+        <main class="main-content">
+            <!-- Header Row -->
+            <header class="app-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">☰</button>
+                    <div class="header-title-group">
+                        <h1>✈️ Airline Customer Sentiment Analyzer</h1>
+                        <p>Analyze airline customer feedback using Python, VADER Sentiment & Chart.js</p>
+                    </div>
+                </div>
+
+                <!-- Animated Sun / Moon Theme Switch -->
+                <button class="theme-switch-btn" id="themeToggleBtn" aria-label="Toggle Theme" title="Switch Theme (Light / Dark)">
+                    <span class="switch-icon">☀️</span>
+                    <div class="switch-thumb"></div>
+                    <span class="switch-icon">🌙</span>
+                </button>
+            </header>
+
+            <!-- Demonstration Notice Banner -->
+            <section class="notice-banner">
+                <span>📌</span>
+                <div>
+                    <strong>Demonstration Notice:</strong> Currently analyzing 50 synthetic airline customer reviews spanning 
+                    <strong>2020 through 2026</strong>. Predictions and compound scores are computed via rule-based VADER sentiment analysis in Python.
+                </div>
+            </section>
+
+            <!-- 1. KPI Metrics Grid -->
+            <section class="kpi-grid">
+                <div class="kpi-card">
+                    <span class="kpi-label">Total Reviews</span>
+                    <div class="kpi-value-row">
+                        <span class="kpi-number" id="kpiTotal">0</span>
+                        <span class="kpi-badge badge-total" id="kpiTotalBadge">100%</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Positive Reviews</span>
+                    <div class="kpi-value-row">
+                        <span class="kpi-number" id="kpiPositive" style="color: var(--positive);">0</span>
+                        <span class="kpi-badge badge-pos" id="kpiPositivePercent">0%</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Negative Reviews</span>
+                    <div class="kpi-value-row">
+                        <span class="kpi-number" id="kpiNegative" style="color: var(--negative);">0</span>
+                        <span class="kpi-badge badge-neg" id="kpiNegativePercent">0%</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Neutral Reviews</span>
+                    <div class="kpi-value-row">
+                        <span class="kpi-number" id="kpiNeutral" style="color: var(--neutral);">0</span>
+                        <span class="kpi-badge badge-neu" id="kpiNeutralPercent">0%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Manual Review Simulator (Accordion Card) -->
+            <section class="accordion-card" id="manualReviewAccordion">
+                <div class="accordion-header" id="manualAccordionHeader">
+                    <span>✍️ Add a New Customer Review (Session Only)</span>
+                    <span class="accordion-icon">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <p style="font-size: 0.82rem; color: var(--secondary-text); margin-top: 10px;">
+                        Enter custom feedback below to test real-time VADER prediction. 
+                        <em>This review exists only in your current browser session and will not alter the source CSV.</em>
+                    </p>
+                    <form id="manualReviewForm" class="form-grid">
+                        <div class="form-group">
+                            <label for="manualAirlineSelect">Airline Name</label>
+                            <select id="manualAirlineSelect" class="form-control" required>
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualDateInput">Review Date</label>
+                            <input type="date" id="manualDateInput" class="form-control" required>
+                        </div>
+                        <div class="form-group form-full">
+                            <label for="manualFeedbackText">Customer Feedback Text</label>
+                            <textarea id="manualFeedbackText" class="form-control" placeholder="e.g., The cabin crew was polite and the flight landed ahead of schedule!" required></textarea>
+                        </div>
+                        <div class="form-full" style="display: flex; align-items: center; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary" id="btnSubmitReview">
+                                Analyze & Add Review
+                            </button>
+                        </div>
+                    </form>
+                    <div class="form-alert" id="manualReviewAlert"></div>
+                </div>
+            </section>
+
+            <!-- 3. Interactive Charts Grid -->
+            <!-- Row 1: Distribution & Airline Comparison -->
+            <section class="charts-grid-row1">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">Chart 1: Overall Sentiment Distribution</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartDistribution"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">Chart 2: Airline-wise Sentiment Comparison</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartAirlineComparison"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Row 2: Date-wise Sentiment Trend (Full Width) -->
+            <section class="chart-card">
+                <div class="chart-header">
+                    <span class="chart-title" id="dateTrendTitle">Chart 3: Chronological Sentiment Trend (2020 – 2026)</span>
+                    <div class="chart-actions">
+                        <button class="toggle-pill-btn active" id="btnFreqMonthly">Monthly View</button>
+                        <button class="toggle-pill-btn" id="btnFreqDaily">Daily View</button>
+                    </div>
+                </div>
+                <div class="chart-container chart-container-large">
+                    <canvas id="chartDateTrend"></canvas>
+                </div>
+            </section>
+
+            <!-- 4. Review Data Table Section -->
+            <section class="table-card">
+                <div class="table-toolbar">
+                    <div class="table-title-group">
+                        <span class="table-title">📋 Analyzed Customer Reviews</span>
+                        <span class="table-count-badge" id="tableRecordCount">Showing 0 reviews</span>
+                    </div>
+                    <input type="text" class="table-search-input" id="tableSearchInput" placeholder="🔍 Search feedback or airline...">
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="reviewsTable">
+                        <thead>
+                            <tr>
+                                <th>Airline</th>
+                                <th>Date</th>
+                                <th>Customer Feedback</th>
+                                <th>Sentiment</th>
+                                <th>Compound Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reviewsTableBody">
+                            <tr>
+                                <td colspan="5" class="empty-state">Loading reviews data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 5. Export Section -->
+            <section class="export-card">
+                <div class="export-info">
+                    <h4>📥 Export & Reports</h4>
+                    <p>Download the currently filtered reviews and sentiment calculations.</p>
+                </div>
+                <div class="export-buttons">
+                    <a href="/api/export/csv" class="btn btn-primary" id="btnExportCSV" download>
+                        ⬇️ Download Filtered CSV
+                    </a>
+                    <a href="/api/export/pdf" class="btn btn-primary" id="btnExportPDF" download>
+                        📄 Download PDF Summary Report
+                    </a>
+                </div>
+            </section>
+
+            <!-- 6. Methodology & Viva Notes (Accordion Card) -->
+            <section class="accordion-card" id="methodologyAccordion">
+                <div class="accordion-header" id="methodologyAccordionHeader">
+                    <span>ℹ️ Methodology, VADER Thresholds & Limitations</span>
+                    <span class="accordion-icon">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div class="methodology-text" style="padding-top: 14px;">
+                        <h5 style="margin-bottom: 6px; color: var(--text);">VADER Sentiment Classification Methodology</h5>
+                        <p><strong>Engine:</strong> VADER (<em>Valence Aware Dictionary and sEntiment Reasoner</em>) polarity analyzer.</p>
+                        <p><strong>Compound Score:</strong> Normalized metric ranging from <code>-1.0</code> (Extremely Negative) to <code>+1.0</code> (Extremely Positive).</p>
+                        <ul>
+                            <li><strong>Positive:</strong> Compound Score &ge; <code>+0.05</code></li>
+                            <li><strong>Negative:</strong> Compound Score &le; <code>-0.05</code></li>
+                            <li><strong>Neutral:</strong> <code>-0.05</code> &lt; Compound Score &lt; <code>+0.05</code></li>
+                        </ul>
+                        <h5 style="margin-bottom: 6px; color: var(--text);">Practical Limitations for Viva Discussion</h5>
+                        <p>VADER is a rule-based lexicon model, not a large language model. It can occasionally misclassify sarcasm or aviation-specific abbreviations. Reviews are synthetic demonstration records spanning 2020 through 2026.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Frontend Application Logic -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
