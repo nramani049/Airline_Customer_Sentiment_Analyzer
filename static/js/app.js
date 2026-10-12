@@ -329,94 +329,158 @@ function renderAirlineComparisonChart(chartData) {
     }
 }
 
-// Chart 3: Date-wise Sentiment Trend (Line)
+// Chart 3: Review Sentiment Timeline — ek review = ek colored point at Y = 1
+//
+// Root cause of blank chart: Chart.js v4 "scatter" type always parses x values as
+// numbers, even when scale type is set to "category". String dates ("2026-01") become
+// NaN and every point is silently dropped — the canvas stays blank.
+//
+// FIX: Use type "line" with showLine: false.
+//   - Line charts fully support category x-axis with {x: string, y: number} points.
+//   - showLine: false removes connecting lines — result looks identical to a scatter plot.
+//   - Three datasets (Positive / Negative / Neutral) — only each sentiment's own reviews.
+//   - No zeros are ever added. Absent sentiments on a date produce no point at all.
 function renderDateTrendChart(chartData) {
     const canvas = document.getElementById("chartDateTrend");
     if (!canvas) return;
     const colors = getThemeColors();
 
+    // Update chart section title
     const titleEl = document.getElementById("dateTrendTitle");
     if (titleEl) {
-        titleEl.textContent = chartData.frequency === "monthly" 
-            ? "Chart 3: Monthly Sentiment Trend (Actual Review Months, 2020 – 2026)"
-            : "Chart 3: Daily Sentiment Observations (2020 – 2026)";
+        titleEl.textContent = chartData.frequency === "monthly"
+            ? "Review Sentiment Timeline (2020 – 2026) — Monthly View"
+            : "Review Sentiment Timeline (2020 – 2026) — Daily View";
     }
 
-    const dataConfig = {
-        labels: chartData.labels,
-        datasets: [
-            {
-                label: "Positive",
-                data: chartData.positive,
-                borderColor: colors.positive,
-                backgroundColor: colors.positive,
-                tension: 0.25,
-                borderWidth: 2.2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            },
-            {
-                label: "Negative",
-                data: chartData.negative,
-                borderColor: colors.negative,
-                backgroundColor: colors.negative,
-                tension: 0.25,
-                borderWidth: 2.2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            },
-            {
-                label: "Neutral",
-                data: chartData.neutral,
-                borderColor: colors.neutral,
-                backgroundColor: colors.neutral,
-                tension: 0.25,
-                borderWidth: 2.2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            }
-        ]
-    };
+    // Har review ko uske sentiment ke hisaab se teen alag arrays mein daalo.
+    // Sirf apni category ke reviews — koi zero-value point kabhi nahi banega.
+    const timeline = chartData.timeline || [];
+    const posPoints = [];
+    const negPoints = [];
+    const neuPoints = [];
 
+    timeline.forEach(function(item) {
+        const pt = { x: item.date, y: 1 };
+        if (item.sentiment === "Positive")      posPoints.push(pt);
+        else if (item.sentiment === "Negative") negPoints.push(pt);
+        else                                    neuPoints.push(pt);
+    });
+
+    // All unique date labels, chronologically sorted — used as the category axis labels.
+    // Line chart maps each point's x value to its matching label position.
+    const allDateLabels = [...new Set(timeline.map(function(d) { return d.date; }))].sort();
+
+    // Destroy previous instance cleanly before recreating.
+    // Necessary because labels change when switching monthly ↔ daily.
     if (chartTrendInstance) {
-        chartTrendInstance.data = dataConfig;
-        chartTrendInstance.options.scales.x.ticks.color = colors.text;
-        chartTrendInstance.options.scales.x.grid.color = colors.gridLine;
-        chartTrendInstance.options.scales.y.ticks.color = colors.secondaryText;
-        chartTrendInstance.options.scales.y.grid.color = colors.gridLine;
-        chartTrendInstance.options.plugins.legend.labels.color = colors.text;
-        chartTrendInstance.update();
-    } else {
-        chartTrendInstance = new Chart(canvas, {
-            type: "line",
-            data: dataConfig,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: "top",
-                        labels: {
-                            color: colors.text,
-                            boxWidth: 12,
-                            padding: 12,
-                            font: { size: 11, weight: "600" }
+        chartTrendInstance.destroy();
+        chartTrendInstance = null;
+    }
+
+    // Empty state: no reviews to display
+    if (timeline.length === 0) {
+        // Chart is destroyed above; leave canvas blank with no crash.
+        return;
+    }
+
+    chartTrendInstance = new Chart(canvas, {
+        // type "line" + showLine:false = visually identical to scatter,
+        // but correctly resolves string x values against the category axis labels.
+        type: "line",
+        data: {
+            labels: allDateLabels,       // Category axis — all unique sorted date strings
+            datasets: [
+                {
+                    label: "Positive",
+                    data: posPoints,               // [{x: "2026-01", y: 1}, ...]
+                    showLine: false,               // No connecting lines — dots only
+                    backgroundColor: colors.positive,
+                    borderColor: colors.positive,
+                    pointRadius: 7,
+                    pointHoverRadius: 10,
+                    pointStyle: "circle",
+                    spanGaps: false,
+                },
+                {
+                    label: "Negative",
+                    data: negPoints,
+                    showLine: false,
+                    backgroundColor: colors.negative,
+                    borderColor: colors.negative,
+                    pointRadius: 7,
+                    pointHoverRadius: 10,
+                    pointStyle: "circle",
+                    spanGaps: false,
+                },
+                {
+                    label: "Neutral",
+                    data: neuPoints,
+                    showLine: false,
+                    backgroundColor: colors.neutral,
+                    borderColor: colors.neutral,
+                    pointRadius: 7,
+                    pointHoverRadius: 10,
+                    pointStyle: "circle",
+                    spanGaps: false,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "top",
+                    labels: {
+                        color: colors.text,
+                        boxWidth: 12,
+                        padding: 12,
+                        font: { size: 11, weight: "600" },
+                        // Hide legend entries for completely empty sentiment datasets
+                        filter: function(item, chart) {
+                            return chart.datasets[item.datasetIndex].data.length > 0;
                         }
                     }
                 },
-                scales: {
-                    x: {
-                        ticks: { color: colors.text, font: { size: 10 }, maxRotation: 45 },
-                        grid: { color: colors.gridLine }
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            // Show sentiment label and the date — y=1 is not meaningful to display
+                            return " " + ctx.dataset.label + "  |  " + ctx.raw.x;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: "category",
+                    ticks: {
+                        color: colors.text,
+                        font: { size: 10 },
+                        maxRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 20,
                     },
-                    y: {
-                        ticks: { color: colors.secondaryText, stepSize: 1, precision: 0 },
-                        grid: { color: colors.gridLine }
+                    grid: { color: colors.gridLine }
+                },
+                y: {
+                    // All points sit at Y = 1 — this axis is positional, not numeric.
+                    // Hide number ticks; show a descriptive axis title instead.
+                    min: 0,
+                    max: 2,
+                    ticks: { display: false },
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: "Each dot = one review",
+                        color: colors.mutedText || colors.secondaryText,
+                        font: { size: 10 }
                     }
                 }
             }
-        });
-    }
+        }
+    });
 }
 
 // Update all charts theme colors when dark/light mode toggles
@@ -440,16 +504,16 @@ function updateAllChartThemes() {
         chartAirlineInstance.update();
     }
     if (chartTrendInstance) {
-        chartTrendInstance.data.datasets[0].borderColor = colors.positive;
+        // Line chart with showLine:false — both backgroundColor and borderColor drive point colors
         chartTrendInstance.data.datasets[0].backgroundColor = colors.positive;
-        chartTrendInstance.data.datasets[1].borderColor = colors.negative;
+        chartTrendInstance.data.datasets[0].borderColor = colors.positive;
         chartTrendInstance.data.datasets[1].backgroundColor = colors.negative;
-        chartTrendInstance.data.datasets[2].borderColor = colors.neutral;
+        chartTrendInstance.data.datasets[1].borderColor = colors.negative;
         chartTrendInstance.data.datasets[2].backgroundColor = colors.neutral;
+        chartTrendInstance.data.datasets[2].borderColor = colors.neutral;
         chartTrendInstance.options.scales.x.ticks.color = colors.text;
         chartTrendInstance.options.scales.x.grid.color = colors.gridLine;
-        chartTrendInstance.options.scales.y.ticks.color = colors.secondaryText;
-        chartTrendInstance.options.scales.y.grid.color = colors.gridLine;
+        chartTrendInstance.options.scales.y.title.color = colors.mutedText || colors.secondaryText;
         chartTrendInstance.options.plugins.legend.labels.color = colors.text;
         chartTrendInstance.update();
     }

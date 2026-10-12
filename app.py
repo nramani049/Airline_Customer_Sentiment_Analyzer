@@ -187,30 +187,29 @@ def get_dashboard_data():
         "neutral": airline_neu_counts,
     }
 
-    # 4. Date-wise Sentiment Trend
-    date_sum_df = get_date_sentiment_summary(filtered_df, frequency=trend_freq)
-    trend_labels = sorted(date_sum_df["date"].unique().tolist()) if not date_sum_df.empty else []
+    # 4. Review Sentiment Timeline — ek review = ek point (date + sentiment)
+    # Har review ka actual date aur sentiment ek flat list me return karte hain.
+    # Frontend scatter chart me yeh list use hogi — no grouped counts, no zero-valued lines.
+    if not filtered_df.empty:
+        # In monthly view: dates are grouped to YYYY-MM strings for the x-axis label
+        # In daily view: full YYYY-MM-DD dates are used
+        timeline_df = filtered_df.copy()
+        if trend_freq == "monthly":
+            timeline_df["plot_date"] = pd.to_datetime(timeline_df["date"]).dt.strftime("%Y-%m")
+        else:
+            timeline_df["plot_date"] = timeline_df["date"]
 
-    trend_pos = []
-    trend_neg = []
-    trend_neu = []
-
-    for d in trend_labels:
-        sub = date_sum_df[date_sum_df["date"] == d]
-        p_c = int(sub[sub["sentiment"] == "Positive"]["count"].sum()) if not sub.empty else 0
-        n_c = int(sub[sub["sentiment"] == "Negative"]["count"].sum()) if not sub.empty else 0
-        neu_c = int(sub[sub["sentiment"] == "Neutral"]["count"].sum()) if not sub.empty else 0
-        trend_pos.append(p_c)
-        trend_neg.append(n_c)
-        trend_neu.append(neu_c)
+        timeline_points = timeline_df[["plot_date", "sentiment"]].rename(
+            columns={"plot_date": "date"}
+        ).to_dict(orient="records")
+    else:
+        timeline_points = []
 
     trend_chart = {
-        "labels": trend_labels,
         "frequency": trend_freq,
-        "positive": trend_pos,
-        "negative": trend_neg,
-        "neutral": trend_neu,
+        "timeline": timeline_points,   # List of {date, sentiment} — one per review
     }
+
 
     # 5. Reviews Table Data
     reviews_data = []
