@@ -329,159 +329,224 @@ function renderAirlineComparisonChart(chartData) {
     }
 }
 
-// Chart 3: Review Sentiment Timeline — ek review = ek colored point at Y = 1
+// ─────────────────────────────────────────────────────────────────────────────
+// Chart 3: Review Sentiment Timeline — Scatter, Three Horizontal Sentiment Rows
+// ─────────────────────────────────────────────────────────────────────────────
 //
-// Root cause of blank chart: Chart.js v4 "scatter" type always parses x values as
-// numbers, even when scale type is set to "category". String dates ("2026-01") become
-// NaN and every point is silently dropped — the canvas stays blank.
+// Sentiment Y-position mapping (teen fixed rows):
+//   Positive → Y = 2  (green)
+//   Negative → Y = 1  (red)
+//   Neutral  → Y = 0  (grey)
 //
-// FIX: Use type "line" with showLine: false.
-//   - Line charts fully support category x-axis with {x: string, y: number} points.
-//   - showLine: false removes connecting lines — result looks identical to a scatter plot.
-//   - Three datasets (Positive / Negative / Neutral) — only each sentiment's own reviews.
-//   - No zeros are ever added. Absent sentiments on a date produce no point at all.
+// Hinglish explanation:
+// Har review ek colored dot hai — Positive upar (Y=2), Negative beech mein (Y=1),
+// Neutral neeche (Y=0). X-axis par actual chronological dates hain.
+// Koi lines nahi, koi zero-valued points nahi — sirf real reviews ke dots.
+
+function sentimentToY(s) {
+    if (s === "Positive") return 2;
+    if (s === "Negative") return 1;
+    if (s === "Neutral")  return 0;
+    return null;  // invalid — skip this point
+}
+
+function sentimentToColor(s, colors) {
+    if (s === "Positive") return colors.positive;
+    if (s === "Negative") return colors.negative;
+    return colors.neutral;
+}
+
+// Convert a "YYYY-MM" or "YYYY-MM-DD" string to a UTC midnight timestamp (ms).
+// Using UTC avoids timezone-shift surprises when Chart.js formats the tick label.
+function dateStringToMs(dateStr) {
+    if (!dateStr) return null;
+    // Append "-01" if only YYYY-MM so Date.parse handles it as the 1st of the month
+    const normalized = dateStr.length === 7 ? dateStr + "-01" : dateStr;
+    const ms = Date.UTC(
+        parseInt(normalized.slice(0, 4)),
+        parseInt(normalized.slice(5, 7)) - 1,
+        parseInt(normalized.slice(8, 10) || "01")
+    );
+    return isNaN(ms) ? null : ms;
+}
+
 function renderDateTrendChart(chartData) {
     const canvas = document.getElementById("chartDateTrend");
     if (!canvas) return;
     const colors = getThemeColors();
+    const freq   = chartData.frequency || "monthly";
+    const timeline = chartData.timeline || [];
 
-    // Update chart section title
+    // ── Title ──────────────────────────────────────────────────────────────
     const titleEl = document.getElementById("dateTrendTitle");
     if (titleEl) {
-        titleEl.textContent = chartData.frequency === "monthly"
+        titleEl.textContent = freq === "monthly"
             ? "Review Sentiment Timeline (2020 – 2026) — Monthly View"
             : "Review Sentiment Timeline (2020 – 2026) — Daily View";
     }
 
-    // Har review ko uske sentiment ke hisaab se teen alag arrays mein daalo.
-    // Sirf apni category ke reviews — koi zero-value point kabhi nahi banega.
-    const timeline = chartData.timeline || [];
-    const posPoints = [];
-    const negPoints = [];
-    const neuPoints = [];
+    // ── Build scatter points ───────────────────────────────────────────────
+    // Each valid review becomes one {x: timestamp_ms, y: 0|1|2} point.
+    // Per-point backgroundColor array colors each dot by its sentiment.
+    // pointStyle array lets us use "+" for Positive, "−" for Negative, "=" for Neutral
+    // (Chart.js does not support arbitrary unicode pointStyle, so we keep circles and
+    //  rely on colors + the Y-row position + legend for identification.)
+    const scatterPoints    = [];
+    const pointColors      = [];
+    const pointLabels      = [];  // kept for tooltip
+    const pointActualDates = [];  // kept for tooltip (exact date even in monthly view)
+
+    // Track unique x values to build a clean sorted axis label array
+    const uniqueXMs = new Set();
 
     timeline.forEach(function(item) {
-        const pt = { x: item.date, y: 1 };
-        if (item.sentiment === "Positive")      posPoints.push(pt);
-        else if (item.sentiment === "Negative") negPoints.push(pt);
-        else                                    neuPoints.push(pt);
+        const y = sentimentToY(item.sentiment);
+        if (y === null) return;  // unknown sentiment — skip safely
+
+        const ms = dateStringToMs(item.date);
+        if (ms === null) return;  // unparseable date — skip safely
+
+        scatterPoints.push({ x: ms, y: y });
+        pointColors.push(sentimentToColor(item.sentiment, colors));
+        pointLabels.push(item.sentiment);
+        pointActualDates.push(item.actual_date || item.date);
+        uniqueXMs.add(ms);
     });
 
-    // All unique date labels, chronologically sorted — used as the category axis labels.
-    // Line chart maps each point's x value to its matching label position.
-    const allDateLabels = [...new Set(timeline.map(function(d) { return d.date; }))].sort();
+    // Sorted unique x-values for custom tick generation (linear axis)
+    const sortedXMs = Array.from(uniqueXMs).sort(function(a, b) { return a - b; });
 
-    // Destroy previous instance cleanly before recreating.
-    // Necessary because labels change when switching monthly ↔ daily.
+    // ── Tick formatter: ms → readable date string ──────────────────────────
+    function formatXTick(msVal) {
+        const d = new Date(msVal);
+        const yr  = d.getUTCFullYear();
+        const mon = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(d.getUTCDate()).padStart(2, "0");
+        return freq === "monthly" ? `${yr}-${mon}` : `${yr}-${mon}-${day}`;
+    }
+
+    // ── Dataset ────────────────────────────────────────────────────────────
+    const dataConfig = {
+        datasets: [{
+            label: "Reviews",
+            data: scatterPoints,
+            backgroundColor: pointColors,
+            borderColor:      pointColors,     // border same as fill for solid dots
+            borderWidth: 1,
+            pointRadius: 7,
+            pointHoverRadius: 10,
+            pointStyle: "circle",
+            showLine: false,                   // absolutely no connecting lines
+        }]
+    };
+
+    // ── Always destroy & recreate to avoid stale scale/data state ──────────
     if (chartTrendInstance) {
         chartTrendInstance.destroy();
         chartTrendInstance = null;
     }
 
-    // Empty state: no reviews to display
-    if (timeline.length === 0) {
-        // Chart is destroyed above; leave canvas blank with no crash.
+    // ── Empty-state: show a user-friendly message, skip chart creation ──────
+    if (scatterPoints.length === 0) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.fillStyle = colors.secondaryText || "#778196";
+        ctx.font = "14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("No reviews match the active filters.", canvas.width / 2, canvas.height / 2);
+        ctx.restore();
         return;
     }
 
     chartTrendInstance = new Chart(canvas, {
-        // type "line" + showLine:false = visually identical to scatter,
-        // but correctly resolves string x values against the category axis labels.
-        type: "line",
-        data: {
-            labels: allDateLabels,       // Category axis — all unique sorted date strings
-            datasets: [
-                {
-                    label: "Positive",
-                    data: posPoints,               // [{x: "2026-01", y: 1}, ...]
-                    showLine: false,               // No connecting lines — dots only
-                    backgroundColor: colors.positive,
-                    borderColor: colors.positive,
-                    pointRadius: 7,
-                    pointHoverRadius: 10,
-                    pointStyle: "circle",
-                    spanGaps: false,
-                },
-                {
-                    label: "Negative",
-                    data: negPoints,
-                    showLine: false,
-                    backgroundColor: colors.negative,
-                    borderColor: colors.negative,
-                    pointRadius: 7,
-                    pointHoverRadius: 10,
-                    pointStyle: "circle",
-                    spanGaps: false,
-                },
-                {
-                    label: "Neutral",
-                    data: neuPoints,
-                    showLine: false,
-                    backgroundColor: colors.neutral,
-                    borderColor: colors.neutral,
-                    pointRadius: 7,
-                    pointHoverRadius: 10,
-                    pointStyle: "circle",
-                    spanGaps: false,
-                }
-            ]
-        },
+        type: "scatter",
+        data: dataConfig,
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: { duration: 300 },
             plugins: {
+                // ── Custom legend: three static sentiment rows (not dataset-based) ──
                 legend: {
                     position: "top",
                     labels: {
                         color: colors.text,
                         boxWidth: 12,
-                        padding: 12,
+                        padding: 14,
                         font: { size: 11, weight: "600" },
-                        // Hide legend entries for completely empty sentiment datasets
-                        filter: function(item, chart) {
-                            return chart.datasets[item.datasetIndex].data.length > 0;
+                        // Generate three fixed legend entries with the correct colors
+                        generateLabels: function() {
+                            return [
+                                { text: "Positive", fillStyle: colors.positive, strokeStyle: colors.positive, lineWidth: 1, hidden: false, datasetIndex: 0 },
+                                { text: "Negative", fillStyle: colors.negative, strokeStyle: colors.negative, lineWidth: 1, hidden: false, datasetIndex: 0 },
+                                { text: "Neutral",  fillStyle: colors.neutral,  strokeStyle: colors.neutral,  lineWidth: 1, hidden: false, datasetIndex: 0 },
+                            ];
                         }
-                    }
+                    },
+                    // Clicking legend does nothing (single dataset, colors are per-point)
+                    onClick: function() {}
                 },
                 tooltip: {
                     callbacks: {
                         label: function(ctx) {
-                            // Show sentiment label and the date — y=1 is not meaningful to display
-                            return " " + ctx.dataset.label + "  |  " + ctx.raw.x;
+                            const i   = ctx.dataIndex;
+                            const lbl = pointLabels[i]      || "Unknown";
+                            const dt  = pointActualDates[i] || "";
+                            return ` ${lbl}  |  ${dt}`;
                         }
                     }
                 }
             },
             scales: {
                 x: {
-                    type: "category",
+                    type: "linear",
+                    // Use only the actual review dates as tick positions (no interpolated gaps)
+                    afterBuildTicks: function(axis) {
+                        axis.ticks = sortedXMs.map(function(ms) { return { value: ms }; });
+                    },
                     ticks: {
                         color: colors.text,
                         font: { size: 10 },
                         maxRotation: 45,
                         autoSkip: true,
                         maxTicksLimit: 20,
+                        callback: function(val) { return formatXTick(val); }
                     },
-                    grid: { color: colors.gridLine }
+                    grid: { color: colors.gridLine },
+                    title: {
+                        display: false
+                    }
                 },
                 y: {
-                    // All points sit at Y = 1 — this axis is positional, not numeric.
-                    // Hide number ticks; show a descriptive axis title instead.
-                    min: 0,
-                    max: 2,
-                    ticks: { display: false },
-                    grid: { display: false },
-                    title: {
-                        display: true,
-                        text: "Each dot = one review",
-                        color: colors.mutedText || colors.secondaryText,
-                        font: { size: 10 }
+                    // Three fixed rows: 0 = Neutral, 1 = Negative, 2 = Positive
+                    min: -0.6,
+                    max: 2.6,
+                    ticks: {
+                        stepSize: 1,
+                        color: colors.text,
+                        font: { size: 11, weight: "600" },
+                        callback: function(val) {
+                            if (val === 2) return "✚ Positive";
+                            if (val === 1) return "– Negative";
+                            if (val === 0) return "= Neutral";
+                            return "";          // hide 0.5, 1.5 etc.
+                        }
+                    },
+                    // Subtle horizontal grid lines only at the three sentinel rows
+                    grid: {
+                        color: function(ctx) {
+                            const v = ctx.tick.value;
+                            if (v === 0 || v === 1 || v === 2) return colors.gridLine;
+                            return "transparent";
+                        }
                     }
                 }
             }
         }
     });
 }
+
 
 // Update all charts theme colors when dark/light mode toggles
 function updateAllChartThemes() {
@@ -504,18 +569,13 @@ function updateAllChartThemes() {
         chartAirlineInstance.update();
     }
     if (chartTrendInstance) {
-        // Line chart with showLine:false — both backgroundColor and borderColor drive point colors
-        chartTrendInstance.data.datasets[0].backgroundColor = colors.positive;
-        chartTrendInstance.data.datasets[0].borderColor = colors.positive;
-        chartTrendInstance.data.datasets[1].backgroundColor = colors.negative;
-        chartTrendInstance.data.datasets[1].borderColor = colors.negative;
-        chartTrendInstance.data.datasets[2].backgroundColor = colors.neutral;
-        chartTrendInstance.data.datasets[2].borderColor = colors.neutral;
-        chartTrendInstance.options.scales.x.ticks.color = colors.text;
-        chartTrendInstance.options.scales.x.grid.color = colors.gridLine;
-        chartTrendInstance.options.scales.y.title.color = colors.mutedText || colors.secondaryText;
-        chartTrendInstance.options.plugins.legend.labels.color = colors.text;
-        chartTrendInstance.update();
+        // Chart 3 uses per-point backgroundColor arrays (one color per dot).
+        // In-place patching of those arrays is complex — it's cleaner and correct
+        // to simply destroy the instance and re-render with the new theme colors.
+        // fetchDashboardData() will call renderDateTrendChart() which rebuilds everything.
+        chartTrendInstance.destroy();
+        chartTrendInstance = null;
+        fetchDashboardData();  // re-render Chart 3 with updated theme colors
     }
 }
 

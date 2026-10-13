@@ -187,27 +187,29 @@ def get_dashboard_data():
         "neutral": airline_neu_counts,
     }
 
-    # 4. Review Sentiment Timeline — ek review = ek point (date + sentiment)
-    # Har review ka actual date aur sentiment ek flat list me return karte hain.
+    # 4. Review Sentiment Timeline — ek review = ek point (date + sentiment + actual_date)
+    # Har review ka date, sentiment aur actual full date ek flat list me return karte hain.
     # Frontend scatter chart me yeh list use hogi — no grouped counts, no zero-valued lines.
     if not filtered_df.empty:
-        # In monthly view: dates are grouped to YYYY-MM strings for the x-axis label
-        # In daily view: full YYYY-MM-DD dates are used
         timeline_df = filtered_df.copy()
+        # plot_date: YYYY-MM for monthly view (x-axis grouping), YYYY-MM-DD for daily view
+        # actual_date: always full YYYY-MM-DD so tooltip shows exact review date
         if trend_freq == "monthly":
             timeline_df["plot_date"] = pd.to_datetime(timeline_df["date"]).dt.strftime("%Y-%m")
         else:
             timeline_df["plot_date"] = timeline_df["date"]
 
-        timeline_points = timeline_df[["plot_date", "sentiment"]].rename(
-            columns={"plot_date": "date"}
-        ).to_dict(orient="records")
+        timeline_points = (
+            timeline_df[["plot_date", "date", "sentiment"]]
+            .rename(columns={"plot_date": "date", "date": "actual_date"})
+            .to_dict(orient="records")
+        )
     else:
         timeline_points = []
 
     trend_chart = {
         "frequency": trend_freq,
-        "timeline": timeline_points,   # List of {date, sentiment} — one per review
+        "timeline": timeline_points,   # List of {date, actual_date, sentiment} — one per review
     }
 
 
