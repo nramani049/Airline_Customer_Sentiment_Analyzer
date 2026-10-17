@@ -1,9 +1,5 @@
 """
-app.py - Airline Customer Sentiment Analyzer
-
-Streamlit web dashboard jo airline customer reviews ka sentiment analyze karta hai,
-KPI metrics aur interactive charts dikhata hai, animated Sun/Moon theme switch provide karta hai,
-aur in-memory CSV/PDF export provide karta hai.
+app_streamlit_backup.py - Preserved original Streamlit application.
 """
 
 import io
@@ -41,11 +37,7 @@ SAMPLE_FILE_PATH = os.path.join("data", "sample_feedback.csv")
 # ---------------------------------------------------------
 def apply_theme_css(c):
     """
-    Application DOM par centralized light/dark theme CSS inject karta hai.
-    
-    Hinglish explanation:
-    Yeh function background, sidebar, KPI cards, inputs, multiselects, dropdowns,
-    alerts aur buttons ko 100% theme-aware aur readable banata hai.
+    Applies theme CSS styling to the application.
     """
     css = f"""
     <style>
@@ -319,11 +311,7 @@ def apply_theme_css(c):
 # ---------------------------------------------------------
 def load_initial_sample_data():
     """
-    Default sample CSV (50 reviews, 2020-2026) ko read karke VADER se analyze karta hai.
-    
-    Hinglish explanation:
-    Yeh function sample_feedback.csv ko read karta hai aur sentiment analysis
-    sirf ek baar run karke analyzed DataFrame return karta hai.
+    Loads baseline sample dataset and applies VADER sentiment analysis.
     """
     if os.path.exists(SAMPLE_FILE_PATH):
         df = pd.read_csv(SAMPLE_FILE_PATH)
@@ -337,12 +325,7 @@ def load_initial_sample_data():
 @st.cache_data(show_spinner=False)
 def get_cached_pdf_report(df_to_export):
     """
-    ReportLab PDF generation ko cache karta hai taaki har filter interaction par
-    Matplotlib aur ReportLab unnecessarily repeatedly run na ho.
-    
-    Hinglish explanation:
-    Yeh function PDF report ko memory me cache karta hai jisse chart rendering
-    aur filter changes smooth aur fast rehte hain.
+    Caches ReportLab PDF generation for active filtered dataset.
     """
     return generate_pdf_report(df_to_export)
 
@@ -667,7 +650,7 @@ st.markdown(f"<h3>📈 Interactive Sentiment Visualizations</h3>", unsafe_allow_
 
 # Chart builder functions with theme awareness
 def build_sentiment_distribution_chart(dist_df, colors):
-    """Overall Sentiment Distribution Bar Chart banata hai."""
+    """Builds overall sentiment distribution bar chart."""
     sentiment_color_map = {
         "Positive": colors["positive"],
         "Negative": colors["negative"],
@@ -711,7 +694,7 @@ def build_sentiment_distribution_chart(dist_df, colors):
 
 
 def build_airline_comparison_chart(airline_summary, colors):
-    """Airline-wise Grouped Bar Chart banata hai."""
+    """Builds airline-wise grouped bar chart."""
     sentiment_color_map = {
         "Positive": colors["positive"],
         "Negative": colors["negative"],
@@ -758,7 +741,7 @@ def build_airline_comparison_chart(airline_summary, colors):
 
 
 def build_date_trend_chart(date_summary, colors, is_monthly=True):
-    """Date-wise Chronological Trend Line Chart banata hai (2020-2026)."""
+    """Builds chronological trend line chart (2020-2026)."""
     sentiment_color_map = {
         "Positive": colors["positive"],
         "Negative": colors["negative"],
@@ -922,7 +905,7 @@ with st.expander("ℹ️ Methodology, VADER Thresholds & Limitations"):
             - **Negative:** Compound Score $\le$ `-0.05`
             - **Neutral:** `-0.05` $<$ Compound Score $<$ `+0.05`
         
-        ### Practical Limitations for Viva Discussion
+        ### Practical Limitations & Considerations
         - VADER is a **lexical, rule-based model**, not an LLM or deep neural network.
         - It may misclassify subtle sarcasm (e.g., *"Great, another 4-hour delay!"* may get marked positive due to the word *"Great"*).
         - It does not understand domain-specific aviation jargon without manual custom lexicon entries.

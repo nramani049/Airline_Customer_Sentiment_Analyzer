@@ -1,14 +1,13 @@
 """
 modules/report_generator.py
 
-Yeh module ReportLab aur Matplotlib ka use karke analyzed reviews ka
-ek professional aur clean PDF summary report in-memory generate karta hai.
+Generates PDF summary reports in-memory using ReportLab and Matplotlib.
 """
 
 import io
 from datetime import datetime
 
-# Headless backend set karte hain taaki server par koi GUI window issue na aaye
+# Configure headless backend for matplotlib
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -23,11 +22,7 @@ from modules.analytics import calculate_kpis, get_airline_sentiment_summary
 
 def create_sentiment_chart_image(kpis):
     """
-    Matplotlib se sentiment distribution ka ek static chart image buffer banata hai.
-    
-    Hinglish explanation:
-    Yeh function Matplotlib se Positive, Negative aur Neutral counts ka clean bar chart
-    memory buffer (BytesIO) me banata hai taaki ReportLab PDF me embed kar sake.
+    Renders sentiment distribution chart image into an in-memory buffer.
     """
     labels = ["Positive", "Negative", "Neutral"]
     counts = [kpis["positive"], kpis["negative"], kpis["neutral"]]
@@ -65,11 +60,7 @@ def create_sentiment_chart_image(kpis):
 
 def generate_pdf_report(df):
     """
-    Analyzed reviews DataFrame se ek complete PDF report in-memory generate karta hai.
-    
-    Hinglish explanation:
-    Yeh function ReportLab ka use karke title, KPIs, airline breakdown table,
-    chart image aur methodology notes ko ek downloadable PDF file me convert karta hai.
+    Generates a PDF summary report in-memory from analyzed reviews DataFrame.
     """
     try:
         buffer = io.BytesIO()

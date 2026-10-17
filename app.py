@@ -1,8 +1,8 @@
 """
 app.py - Airline Customer Sentiment Analyzer (Flask Application)
 
-Flask web server jo backend routing, session-isolated in-memory dataset storage,
-VADER sentiment processing, dynamic filtering, aur CSV/PDF export provide karta hai.
+Flask web server providing backend routing, session-isolated in-memory dataset storage,
+VADER sentiment processing, dynamic filtering, and CSV/PDF export.
 """
 
 import io
@@ -33,7 +33,7 @@ SAMPLE_FILE_PATH = os.path.join("data", "sample_feedback.csv")
 # ---------------------------------------------------------
 # SESSION-ISOLATED IN-MEMORY DATA STORAGE
 # ---------------------------------------------------------
-# Har browser session ka dataset RAM me alag isolated store hota hai
+# In-memory session store mapping session IDs to DataFrames
 # { session_id: { "df": DataFrame, "source_name": str, "last_accessed": datetime } }
 USER_SESSIONS = {}
 SESSION_TIMEOUT_HOURS = 2
@@ -41,11 +41,7 @@ SESSION_TIMEOUT_HOURS = 2
 
 def load_default_sample_dataframe():
     """
-    Default sample_feedback.csv (50 reviews) ko load karke VADER sentiment analyze karta hai.
-    
-    Hinglish explanation:
-    Yeh function sample_feedback.csv ko read karta hai aur sentiment analysis
-    sirf ek baar run karke analyzed DataFrame return karta hai.
+    Loads baseline sample dataset and runs initial sentiment analysis.
     """
     if os.path.exists(SAMPLE_FILE_PATH):
         df = pd.read_csv(SAMPLE_FILE_PATH)
@@ -61,7 +57,7 @@ BASELINE_SAMPLE_DF = load_default_sample_dataframe()
 
 def cleanup_expired_sessions():
     """
-    Purane expired sessions ko RAM se remove karta hai memory leak prevent karne ke liye.
+    Removes inactive sessions from memory based on timeout.
     """
     now = datetime.now()
     expired_keys = [
@@ -75,12 +71,7 @@ def cleanup_expired_sessions():
 
 def get_or_create_user_session():
     """
-    Current user ka session retrieve karta hai ya naya isolated session initialize karta hai.
-    
-    Hinglish explanation:
-    Yeh function user ke browser cookie se session_id check karta hai aur RAM me
-    us user ka isolated dataset provide karta hai. Agar session naya hai, toh 50
-    reviews ka fresh baseline copy store karta hai.
+    Retrieves current user's session or initializes a new isolated session in memory.
     """
     cleanup_expired_sessions()
 
@@ -105,7 +96,7 @@ def get_or_create_user_session():
 @app.route("/")
 def index():
     """
-    Main dashboard HTML page render karta hai.
+    Renders main dashboard HTML page.
     """
     # Ensure session is initialized
     get_or_create_user_session()
@@ -118,11 +109,7 @@ def index():
 @app.route("/api/dashboard", methods=["GET"])
 def get_dashboard_data():
     """
-    Filtered reviews, KPIs, aur Chart.js structured data JSON format me return karta hai.
-    
-    Hinglish explanation:
-    Jab bhi user filters (airline, sentiment, dates) change karta hai, frontend
-    is endpoint ko call karta hai. Yeh endpoint bina page reload ke updated data return karta hai.
+    Returns filtered reviews, KPI metrics, and Chart.js datasets in JSON format.
     """
     sid, user_session = get_or_create_user_session()
     active_df = user_session["df"]
@@ -187,13 +174,11 @@ def get_dashboard_data():
         "neutral": airline_neu_counts,
     }
 
-    # 4. Review Sentiment Timeline — ek review = ek point (date + sentiment + actual_date)
-    # Har review ka date, sentiment aur actual full date ek flat list me return karte hain.
-    # Frontend scatter chart me yeh list use hogi — no grouped counts, no zero-valued lines.
+    # 4. Review Sentiment Timeline - Individual points for chronological scatter visualization
     if not filtered_df.empty:
         timeline_df = filtered_df.copy()
         # plot_date: YYYY-MM for monthly view (x-axis grouping), YYYY-MM-DD for daily view
-        # actual_date: always full YYYY-MM-DD so tooltip shows exact review date
+        # actual_date: full YYYY-MM-DD for tooltip display
         if trend_freq == "monthly":
             timeline_df["plot_date"] = pd.to_datetime(timeline_df["date"]).dt.strftime("%Y-%m")
         else:
@@ -209,7 +194,7 @@ def get_dashboard_data():
 
     trend_chart = {
         "frequency": trend_freq,
-        "timeline": timeline_points,   # List of {date, actual_date, sentiment} — one per review
+        "timeline": timeline_points,
     }
 
 
@@ -255,11 +240,7 @@ def get_dashboard_data():
 @app.route("/api/reviews", methods=["POST"])
 def add_manual_review():
     """
-    Single customer review ko analyze karke session dataset me append karta hai.
-    
-    Hinglish explanation:
-    Yeh endpoint frontend ke form se feedback text, airline aur date leta hai,
-    VADER se sentiment calculate karta hai aur user ke session DataFrame me add karta hai.
+    Analyzes single customer review with VADER and appends it to session dataset.
     """
     sid, user_session = get_or_create_user_session()
     data = request.get_json(silent=True) or {}
@@ -315,11 +296,7 @@ def add_manual_review():
 @app.route("/api/upload", methods=["POST"])
 def upload_csv():
     """
-    Uploaded CSV file ko validate karta hai aur VADER se analyze karke session me store karta hai.
-    
-    Hinglish explanation:
-    Yeh endpoint uploaded CSV file ke columns (airline, date, feedback) validate karta hai,
-    empty rows drop karta hai, VADER sentiment calculate karta hai aur session dataset update karta hai.
+    Validates uploaded CSV file, analyzes reviews with VADER, and stores them in session dataset.
     """
     sid, user_session = get_or_create_user_session()
 
@@ -384,7 +361,7 @@ def upload_csv():
 @app.route("/api/reset-sample", methods=["POST"])
 def reset_sample_dataset():
     """
-    Session dataset ko original 50 synthetic reviews par reset karta hai.
+    Resets the session dataset to the baseline 50 sample reviews.
     """
     sid, user_session = get_or_create_user_session()
     user_session["df"] = BASELINE_SAMPLE_DF.copy()
@@ -403,11 +380,7 @@ def reset_sample_dataset():
 @app.route("/api/export/csv", methods=["GET"])
 def export_csv():
     """
-    Currently filtered reviews ko CSV file attachment ke roop me download karwata hai.
-    
-    Hinglish explanation:
-    Yeh endpoint filtered dataset ko memory buffer me CSV banata hai
-    aur browser ko download attachment ke roop me bhejta hai.
+    Exports currently filtered reviews as a downloadable CSV attachment.
     """
     sid, user_session = get_or_create_user_session()
     active_df = user_session["df"]
@@ -451,11 +424,7 @@ def export_csv():
 @app.route("/api/export/pdf", methods=["GET"])
 def export_pdf():
     """
-    Currently filtered dataset se ReportLab PDF report in-memory generate karke download karwata hai.
-    
-    Hinglish explanation:
-    Yeh endpoint ReportLab aur Matplotlib ka use karke filtered summary report PDF
-    memory buffer me banata hai aur browser ko download bhejta hai.
+    Generates and downloads a ReportLab PDF summary report for filtered reviews in-memory.
     """
     sid, user_session = get_or_create_user_session()
     active_df = user_session["df"]

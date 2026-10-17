@@ -333,15 +333,12 @@ function renderAirlineComparisonChart(chartData) {
 // Chart 3: Review Sentiment Timeline — Scatter, Three Horizontal Sentiment Rows
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Sentiment Y-position mapping (teen fixed rows):
-//   Positive → Y = 2  (green)
-//   Negative → Y = 1  (red)
-//   Neutral  → Y = 0  (grey)
+// Sentiment Y-position mapping:
+//   Positive → Y = 2
+//   Negative → Y = 1
+//   Neutral  → Y = 0
 //
-// Hinglish explanation:
-// Har review ek colored dot hai — Positive upar (Y=2), Negative beech mein (Y=1),
-// Neutral neeche (Y=0). X-axis par actual chronological dates hain.
-// Koi lines nahi, koi zero-valued points nahi — sirf real reviews ke dots.
+// Each review is plotted as an individual scatter point along the chronological timeline.
 
 function sentimentToY(s) {
     if (s === "Positive") return 2;

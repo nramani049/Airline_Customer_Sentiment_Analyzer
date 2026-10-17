@@ -1,8 +1,8 @@
 """
 modules/analytics.py
 
-Yeh module analyzed reviews ke data par calculations karta hai jaise KPIs,
-airline-wise sentiment counts, date-wise trends, theme colors aur filter operations.
+Analytics module for computing KPI metrics, sentiment distributions,
+airline breakdowns, chronological summaries, and multi-criteria filters.
 """
 
 import pandas as pd
@@ -10,11 +10,7 @@ import pandas as pd
 
 def get_theme_colors(theme_name="dark"):
     """
-    Selected theme (dark ya light) ke hisaab se centralized colors dictionary return karta hai.
-    
-    Hinglish explanation:
-    Yeh function dark mode aur light mode ke liye consistent, high-contrast color palette
-    provide karta hai jo dashboard, cards, sidebar, table aur Plotly charts me use hoti hai.
+    Returns color palette configuration dictionary for the specified theme.
     """
     if theme_name == "light":
         return {
@@ -70,11 +66,7 @@ def get_theme_colors(theme_name="dark"):
 
 def calculate_kpis(df):
     """
-    Total, Positive, Negative aur Neutral reviews count calculate karta hai.
-    
-    Hinglish explanation:
-    Yeh function filtered ya full dataset me se Positive, Negative aur Neutral
-    reviews ki ginti karke total summary KPI dictionary return karta hai.
+    Calculates total, positive, negative, and neutral review counts and percentages.
     """
     if df is None or len(df) == 0:
         return {
@@ -110,11 +102,7 @@ def calculate_kpis(df):
 
 def get_sentiment_distribution(df):
     """
-    Overall sentiment distribution ka DataFrame banata hai chart ke liye.
-    
-    Hinglish explanation:
-    Yeh function bar chart ya pie chart ke liye Positive, Negative aur Neutral
-    ke counts aur percentages ka clean DataFrame banata hai.
+    Generates DataFrame containing overall sentiment counts and percentages.
     """
     if df is None or len(df) == 0:
         return pd.DataFrame(columns=["sentiment", "count", "percentage"])
@@ -130,16 +118,11 @@ def get_sentiment_distribution(df):
 
 def get_airline_sentiment_summary(df):
     """
-    Har airline ke Positive, Negative aur Neutral reviews count nikalta hai.
-    
-    Hinglish explanation:
-    Yeh function airline aur sentiment ke according data ko group karta hai
-    taaki hum grouped bar chart me airlines ka comparison dikha sakein.
+    Aggregates review counts grouped by airline and sentiment.
     """
     if df is None or len(df) == 0:
         return pd.DataFrame(columns=["airline", "sentiment", "count"])
 
-    # Group by airline and sentiment, counting occurrences
     summary = (
         df.groupby(["airline", "sentiment"], observed=False)
         .size()
@@ -150,11 +133,7 @@ def get_airline_sentiment_summary(df):
 
 def get_date_sentiment_summary(df, frequency="monthly"):
     """
-    Date-wise ya Monthly sentiment summary nikalta hai aur chronologically sort karta hai.
-    
-    Hinglish explanation:
-    Yeh function reviews ko actual dates ya months ke hisaab se group karke
-    chronological trend line chart ke liye structured DataFrame return karta hai.
+    Aggregates sentiment counts chronologically by month or day.
     """
     if df is None or len(df) == 0:
         return pd.DataFrame(columns=["date", "sentiment", "count"])
@@ -162,10 +141,8 @@ def get_date_sentiment_summary(df, frequency="monthly"):
     temp_df = df.copy()
 
     if frequency == "monthly":
-        # Group by YYYY-MM formatted string
         temp_df["date"] = pd.to_datetime(temp_df["date"]).dt.strftime("%Y-%m")
     else:
-        # Group by exact date YYYY-MM-DD
         temp_df["date"] = pd.to_datetime(temp_df["date"]).dt.strftime("%Y-%m-%d")
 
     summary = (
@@ -179,11 +156,7 @@ def get_date_sentiment_summary(df, frequency="monthly"):
 
 def filter_data(df, selected_airlines=None, selected_sentiments=None, start_date=None, end_date=None):
     """
-    Airlines, sentiments aur date range ke basis par DataFrame ko filter karta hai.
-    
-    Hinglish explanation:
-    Yeh function user ke sidebar selections (airline, sentiment, dates) ke according
-    fast conditions lagakar matching reviews ka filtered DataFrame return karta hai.
+    Filters DataFrame based on airline, sentiment, and date range criteria.
     """
     if df is None or len(df) == 0:
         return df
